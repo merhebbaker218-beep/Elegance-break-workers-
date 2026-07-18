@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل الاستراحات</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        button { padding: 15px 30px; font-size: 18px; margin: 10px; border-radius: 10px; cursor: pointer; }
+        #logArea { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>نظام تسجيل الاستراحات</h1>
+    <button onclick="saveTime('دخول')">تسجيل دخول الاستراحة</button>
+    <button onclick="saveTime('خروج')">تسجيل خروج الاستراحة</button>
+    <div id="logArea"><h3>السجلات الأخيرة:</h3><ul id="logList"></ul></div>
+    <script src="script.js"></script>
+</body>
+</html>
