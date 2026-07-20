@@ -82,7 +82,7 @@ function registerAction(actionType) {
     alert(`تم تسجيل ${actionType} للعامل: ${workerName}`);
 }
 
-// تحديث الواجهة وعرض العمال المتواجدين
+// تحديث الواجهة وعرض العمال المتواجدين حالياً في الاستراحة
 function updateUI() {
     const activeList = document.getElementById('activeWorkersList');
     if (!activeList) return;
@@ -92,8 +92,22 @@ function updateUI() {
         return;
     }
 
-    activeList.innerHTML = "";
+    // خريطة لتخزين أحدث حالة لكل عامل
+    const workerLastAction = {};
     breaksData.forEach(item => {
+        workerLastAction[item.name] = item;
+    });
+
+    // تصفية العمال الذين أحدث حركة لهم هي "دخول"
+    const activeWorkers = Object.values(workerLastAction).filter(item => item.type === 'دخول');
+
+    if (activeWorkers.length === 0) {
+        activeList.innerHTML = '<li>لا يوجد عمال داخل الاستراحة حالياً</li>';
+        return;
+    }
+
+    activeList.innerHTML = "";
+    activeWorkers.forEach(item => {
         const li = document.createElement('li');
         li.textContent = `${item.name} - ${item.type} (الساعة: ${item.time})`;
         activeList.appendChild(li);
