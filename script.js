@@ -1,10 +1,66 @@
-// تعريف المصفوفة الأساسية لتخزين البيانات محلياً
+// تهيئة البيانات من التخزين المحلي
+let workersList = JSON.parse(localStorage.getItem('elegance_workers')) || [];
 let breaksData = JSON.parse(localStorage.getItem('elegance_breaks')) || [];
 
-// دالة لتسجيل دخول أو خروج العمال وتحديث الشاشة
-function addBreakRecord(workerName, type) {
+// تحديث القائمة المنسدلة للعمال والواجهة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    updateWorkersDropdown();
+    updateUI();
+
+    // ربط زر التصدير بدالة الـ CSV
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            exportToCSV();
+        });
+    }
+});
+
+// إضافة عامل جديد
+function addNewWorker() {
+    const input = document.getElementById('newWorkerInput');
+    const workerName = input.value.trim();
+
     if (!workerName) {
-        alert("يرجى اختيار أو إدخال اسم العامل");
+        alert("الرجاء إدخال اسم العامل");
+        return;
+    }
+
+    if (workersList.includes(workerName)) {
+        alert("هذا العامل موجود مسبقاً");
+        return;
+    }
+
+    workersList.push(workerName);
+    localStorage.setItem('elegance_workers', JSON.stringify(workersList));
+    
+    input.value = "";
+    updateWorkersDropdown();
+    alert("تم إضافة العامل بنجاح");
+}
+
+// تحديث القائمة المنسدلة (Dropdown)
+function updateWorkersDropdown() {
+    const select = document.getElementById('workerSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option value="" disabled selected>اختر عاملاً...</option>';
+    workersList.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+}
+
+// تسجيل الدخول أو الخروج للاستراحة
+function registerAction(actionType) {
+    const select = document.getElementById('workerSelect');
+    const workerName = select.value;
+
+    if (!workerName) {
+        alert("الرجاء اختيار عامل من القائمة");
         return;
     }
 
@@ -14,45 +70,51 @@ function addBreakRecord(workerName, type) {
 
     const record = {
         name: workerName,
-        type: type, // دخول أو خروج
+        type: actionType,
         time: timeString,
         date: dateString
     };
 
     breaksData.push(record);
-    
-    // حفظ البيانات في التخزين المحلي للمتصفح
     localStorage.setItem('elegance_breaks', JSON.stringify(breaksData));
-    
-    // تحديث الواجهة
     updateUI();
+    
+    alert(`تم تسجيل ${actionType} للعامل: ${workerName}`);
 }
 
-// دالة تحديث الواجهة وعرض العمال الحاليين
+// تحديث الواجهة وعرض العمال المتواجدين
 function updateUI() {
-    // يمكنك ربط عناصر واجهة المستخدم هنا إذا كنت بحاجة لعرض القائمة
-    console.log("تم تحديث البيانات:", breaksData);
+    const activeList = document.getElementById('activeWorkersList');
+    if (!activeList) return;
+
+    if (breaksData.length === 0) {
+        activeList.innerHTML = '<li>لا يوجد عمال داخل الاستراحة حالياً</li>';
+        return;
+    }
+
+    activeList.innerHTML = "";
+    breaksData.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.name} - ${item.type} (الساعة: ${item.time})`;
+        activeList.appendChild(li);
+    });
 }
 
-// دالة التصدير إلى ملف إكسل (CSV) المتوافقة مع الهواتف والمتصفحات
+// دالة التصدير إلى إكسل (CSV) المتوافقة تماماً مع الهواتف
 function exportToCSV() {
     if (!breaksData || breaksData.length === 0) {
         alert("لا توجد بيانات للتصدير حالياً");
         return;
     }
 
-    // تجهيز محتوى الـ CSV مع إضافة ترميز البداية لضمان قراءة اللغة العربية بشكل صحيح في إكسل
+    // إضافة ترميز UTF-8 BOM لضمان قراءة اللغة العربية بشكل صحيح في أكسل
     let csvContent = "\uFEFF"; 
-    
-    // عناوين الأعمدة
-    csvContent += "اسم العامل,الحالة,الوقت,التاريخ\n";
+    csvContent += "اسم العامل,نوع العملية,الوقت,التاريخ\n";
 
-    // إضافة الصفوف
     breaksData.forEach(row => {
         csvContent += `"${row.name}","${row.type}","${row.time}","${row.date}"\n`;
     });
 
-    // إنشاء رابط الـ Blob الآمن لتجاوز قيود التحميل في الهواتف
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     
@@ -63,23 +125,8 @@ function exportToCSV() {
     document.body.appendChild(link);
     link.click();
     
-    // تنظيف الرابط والذاكرة المؤقتة بعد التحميل
     setTimeout(() => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }, 100);
 }
-
-// ربط زر التصدير تلقائياً عند تحميل الصفحة (تأكد أن زر التصدير لديه الفئة أو المعرف المناسب)
-document.addEventListener('DOMContentLoaded', () => {
-    updateUI();
-    
-    // البحث عن زر التصدير (يمكنك تعديل المحدد حسب تصميمك، مثل جلب الزر عبر الـ ID)
-    const exportBtn = document.querySelector('.btn-success') || document.querySelector('button:last-child');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            exportToCSV();
-        });
-    }
-});
