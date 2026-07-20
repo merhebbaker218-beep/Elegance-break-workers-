@@ -37,6 +37,7 @@ function addNewWorker() {
     
     input.value = "";
     updateWorkersDropdown();
+    updateUI();
     alert("تم إضافة العامل بنجاح");
 }
 
@@ -72,7 +73,8 @@ function registerAction(actionType) {
         name: workerName,
         type: actionType,
         time: timeString,
-        date: dateString
+        date: dateString,
+        timestamp: now.getTime() // إضافة وقت رقمي لحساب الساعات والترتيب لاحقاً
     };
 
     breaksData.push(record);
@@ -98,8 +100,8 @@ function updateUI() {
         workerLastAction[item.name] = item;
     });
 
-    // تصفية العمال الذين أحدث حركة لهم هي "دخول"
-    const activeWorkers = Object.values(workerLastAction).filter(item => item.type === 'دخول');
+    // تصفية العمال الذين أحدث حركة لهم هي "دخول الاستراحة"
+    const activeWorkers = Object.values(workerLastAction).filter(item => item.type === 'دخول الاستراحة');
 
     if (activeWorkers.length === 0) {
         activeList.innerHTML = '<li>لا يوجد عمال داخل الاستراحة حالياً</li>';
@@ -109,7 +111,7 @@ function updateUI() {
     activeList.innerHTML = "";
     activeWorkers.forEach(item => {
         const li = document.createElement('li');
-        li.textContent = `${item.name} - ${item.type} (الساعة: ${item.time})`;
+        li.textContent = `${item.name} (دخل في الساعة: ${item.time})`;
         activeList.appendChild(li);
     });
 }
