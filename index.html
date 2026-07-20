@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elegance Break App - نظام تسجيل الاستراحات</title>
+    <title>Elegance Break App</title>
     <style>
         body {
             font-family: Tahoma, Arial, sans-serif;
@@ -21,10 +21,10 @@
             justify-content: space-between;
         }
         h1 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             margin: 0;
             text-align: center;
-            padding: 20px 0;
+            padding: 15px 0;
         }
         .container {
             max-width: 600px;
@@ -33,25 +33,23 @@
         }
         .card {
             background: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .form-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
-        select, input, button {
-            padding: 12px;
+        select, input {
+            padding: 10px;
             font-size: 1rem;
             border-radius: 8px;
             border: 1px solid #ccc;
-            outline: none;
-        }
-        select, input {
             flex: 1;
+            outline: none;
         }
         .btn-primary {
             background-color: #344154;
@@ -59,11 +57,24 @@
             border: none;
             cursor: pointer;
             width: 100%;
-            margin-bottom: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
             font-weight: bold;
+            margin-bottom: 10px;
         }
         .btn-primary:hover {
             background-color: #232b38;
+        }
+        .btn-add {
+            background-color: #344154;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 0 15px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
         }
         .btn-success {
             background-color: #2ecc71;
@@ -71,6 +82,8 @@
             border: none;
             cursor: pointer;
             width: 100%;
+            padding: 12px;
+            border-radius: 8px;
             font-weight: bold;
             font-size: 1.1rem;
         }
@@ -78,53 +91,52 @@
             background-color: #27ae60;
         }
         .section-title {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <span style="font-size: 1.5rem; cursor: pointer;">☰</span>
-        <span style="font-size: 1.2rem; font-weight: bold;">Elegance break app</span>
+        <span style="font-size: 1.4rem; cursor: pointer;">☰</span>
+        <span style="font-size: 1.1rem; font-weight: bold;">Elegance break app</span>
         <span></span>
     </header>
 
     <div class="container">
         <h1>نظام تسجيل الاستراحات</h1>
 
-        <!-- بطاقة إضافة وتسجيل الاستراحة -->
+        <!-- قسم الإدخال -->
         <div class="card">
             <div class="form-group">
                 <input type="text" id="newWorkerInput" placeholder="اسم جديد...">
                 <select id="workerSelect">
                     <option value="" disabled selected>اختر عاملاً...</option>
-                    <!-- سيتم تعبئة الأسماء هنا ديناميكياً -->
                 </select>
-                <button class="btn-primary" style="width: auto; margin:0;" onclick="addNewWorker()"> + </button>
+                <button class="btn-add" onclick="addNewWorker()">+</button>
             </div>
 
             <button class="btn-primary" onclick="registerAction('دخول الاستراحة')">تسجيل دخول الاستراحة</button>
             <button class="btn-primary" onclick="registerAction('خروج الاستراحة')">تسجيل خروج الاستراحة</button>
         </div>
 
-        <!-- العمال المتواجدون حالياً -->
+        <!-- العمال المتواجدون -->
         <div class="card">
             <div class="section-title">العمال المتواجدون حالياً في الاستراحة:</div>
-            <ul id="activeWorkersList" style="padding-right: 20px; margin: 0;">
+            <ul id="activeWorkersList" style="padding-right: 20px; margin: 0; font-size: 0.95rem;">
                 <li>لا يوجد عمال داخل الاستراحة حالياً</li>
             </ul>
         </div>
 
-        <!-- إجمالي ساعات الاستراحة اليومية -->
+        <!-- إجمالي الساعات -->
         <div class="card">
             <div class="section-title">إجمالي ساعات الاستراحة اليومية:</div>
-            <p id="totalHoursText">إجمالي: 0.00 ساعة (0 دقيقة)</p>
+            <p id="totalHoursText" style="margin: 0; font-size: 0.95rem;">إجمالي: 0.00 ساعة (0 دقيقة)</p>
         </div>
 
-        <!-- زر التصدير إلى إكسل المحدث -->
+        <!-- زر التصدير إلى إكسل -->
         <button id="exportBtn" class="btn-success">تصدير إلى جدول إكسل (CSV)</button>
     </div>
 
