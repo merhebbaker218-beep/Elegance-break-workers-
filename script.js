@@ -1,143 +1,117 @@
-document.addEventListener('DOMContentLoaded', function () {
-    updateWorkerList();
-    updateDisplay();
-});
+// ==========================================
+تهيئة المتغيرات والاتصال بقاعدة البيانات (Supabase)
+// ==========================================
+// تأكد من ضبط مفاتيح ورابط Supabase الخاصة بك هنا أو جلبها من الملف الأساسي
+// const supabaseUrl = 'YOUR_SUPABASE_URL';
+// const supabaseKey = 'YOUR_SUPABASE_KEY';
+// const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-// إضافة عامل جديد للقائمة
-function addWorker() {
-    const input = document.getElementById('newWorkerName');
-    const newName = input.value.trim();
-    
-    if (!newName) {
-        alert('الرجاء إدخال اسم صحيح!');
-        return;
-    }
-    
-    let workers = JSON.parse(localStorage.getItem('workerList') || '[]');
-    
-    if (!workers.includes(newName)) {
-        workers.push(newName);
-        localStorage.setItem('workerList', JSON.stringify(workers));
-        updateWorkerList();
-        alert('تمت إضافة العامل بنجاح: ' + newName);
-    } else {
-        alert('هذا الاسم موجود مسبقاً في القائمة!');
-    }
-    
-    input.value = '';
-}
+// مصفوفة لتخزين البيانات الحالية محلياً لعرضها وتصديرها
+window.breaksData = [];
 
-// تحديث القائمة المنسدلة للأسماء
-function updateWorkerList() {
-    const select = document.getElementById('workerName');
-    const workers = JSON.parse(localStorage.getItem('workerList') || '[]');
-    select.innerHTML = '<option value="">اختر عاملاً...</option>';
-    workers.forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-    });
-}
+// دالة لتحديث وعرض العمال المتواجدين حالياً في الاستراحة وإجمالي الساعات
+async function fetchBreaksData() {
+    try {
+        // استبدل 'breaks_records' باسم الجدول الفعلي لديك في Supabase
+        const { data, error } = await _supabase
+            .from('breaks_records')
+            .select('*');
 
-// تسجيل وقت الدخول أو الخروج
-function saveTime(type) {
-    const workerName = document.getElementById('workerName').value;
-    if (!workerName) {
-        alert('يرجى اختيار اسم العامل!');
-        return;
-    }
-
-    const now = new Date();
-    const entry = {
-        name: workerName,
-        type: type,
-        timestamp: now.getTime(),
-        formattedTime: now.toLocaleString('ar-EG')
-    };
-
-    let logs = JSON.parse(localStorage.getItem('breakLogs') || '[]');
-    logs.unshift(entry);
-    localStorage.setItem('breakLogs', JSON.stringify(logs));
-    updateDisplay();
-}
-
-// تحديث الواجهة وحساب الحالات وساعات الاستراحة
-function updateDisplay() {
-    const list = document.getElementById('logList');
-    const activeList = document.getElementById('activeWorkersList');
-    const hoursList = document.getElementById('totalHoursList');
-    
-    if (!list) return;
-    
-    list.innerHTML = '';
-    activeList.innerHTML = '';
-    hoursList.innerHTML = '';
-
-    const logs = JSON.parse(localStorage.getItem('breakLogs') || '[]');
-    
-    // عرض السجلات الأخيرة
-    logs.forEach(log => {
-        const li = document.createElement('li');
-        li.textContent = log.name + " - " + log.type + ": " + log.formattedTime;
-        list.appendChild(li);
-    });
-
-    // تتبع من هو داخل الاستراحة حالياً وحساب مجموع الساعات
-    let workerStatus = {};
-    let workerTotalMinutes = {};
-
-    // قراءة السجلات تصاعدياً للحساب الصحيح
-    const sortedLogs = [...logs].reverse();
-    sortedLogs.forEach(log => {
-        if (!workerTotalMinutes[log.name]) workerTotalMinutes[log.name] = 0;
-
-        if (log.type === 'دخول') {
-            workerStatus[log.name] = log.timestamp;
-        } else if (log.type === 'خروج' && workerStatus[log.name]) {
-            let diffMs = log.timestamp - workerStatus[log.name];
-            let diffMins = Math.floor(diffMs / 60000);
-            workerTotalMinutes[log.name] += diffMins;
-            delete workerStatus[log.name];
+        if (error) {
+            console.error('خطأ في جلب البيانات:', error.message);
+            return;
         }
+
+        if (data) {
+            // تخزين البيانات في المصفوفة العامة لتكون جاهزة للتصدير
+            window.breaksData = data;
+            
+            // تحديث الواجهة الرسومية بناءً على البيانات المستلمة
+            updateUI(data);
+        }
+    } catch (err) {
+        console.error('حدث خطأ غير متوقع:', err);
+    }
+}
+
+// دالة لتحديث الواجهة وعرض الأسماء والتواريخ بشكل سليم لتجنب ظهور undefined أو Invalid Date
+function updateUI(data) {
+    const activeWorkersContainer = document.getElementById('active-workers-container'); // مثال لعنصر الحاوية
+    // يمكنك ربط هذه الدالة بالعناصر الموجودة في واجهتك HTML
+    
+    data.forEach(row => {
+        // معالجة الحقول لضمان عدم ظهور undefined
+        const workerName = row.worker_name || row.name || 'عمل غير معروف';
+        const entryTime = row.entry_time ? new Date(row.entry_time).toLocaleTimeString() : 'وقت غير متوفر';
+        
+        // طباعة تحققية في الكونسول
+        console.log(`العامل: ${workerName}, وقت الدخول: ${entryTime}`);
+    });
+}
+
+// ==========================================
+// دالة التصدير إلى جدول إكسل (CSV) المحدثة والمصححة
+// ==========================================
+function exportToCSV() {
+    // 1. التحقق من وجود بيانات للتصدير
+    if (!window.breaksData || window.breaksData.length === 0) {
+        alert("لا توجد بيانات متاحة للتصدير حالياً.");
+        return;
+    }
+
+    // 2. تجهيز محتوى ملف الـ CSV مع إضافة ترميز UTF-8 (BOM) لدعم اللغة العربية بشكل صحيح في Excel
+    let csvContent = "\uFEFF"; 
+    
+    // إضافة ترويسة الأعمدة (Headers)
+    csvContent += "اسم العامل,نوع العملية,الوقت,التاريخ\n";
+
+    // 3. إضافة الصفوف وترتيب البيانات من الجدول
+    window.breaksData.forEach(row => {
+        // استخدام الأسماء الصحيحة للأعمدة من قاعدة البيانات وتجنب أي قيم فارغة أو undefined
+        const workerName = row.worker_name || row.name || '';
+        const operationType = row.type || row.operation_type || '';
+        const timeVal = row.time || row.entry_time || '';
+        const dateVal = row.date || '';
+
+        let line = `"${workerName}","${operationType}","${timeVal}","${dateVal}"`;
+        csvContent += line + "\n";
     });
 
-    // عرض العمال المتواجدين حالياً في الاستراحة للـ مدير
-    const currentlyInside = Object.keys(workerStatus);
-    if (currentlyInside.length === 0) {
-        activeList.innerHTML = '<li>لا يوجد أحد داخل الاستراحة حالياً.</li>';
+    // 4. إنشاء كائن Blob وتوليد الرابط بطريقة آمنة ومتوافقة تماماً مع الهواتف الذكية ومتصفحات الويب
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    
+    if (navigator.msSaveBlob) { 
+        // لدعم متصفحات إنترنت إكسبلورر القديمة إن وجدت
+        navigator.msSaveBlob(blob, "elegance_breaks_report.csv");
     } else {
-        currentlyInside.forEach(name => {
-            const li = document.createElement('li');
-            let enterTime = new Date(workerStatus[name]).toLocaleTimeString('ar-EG');
-            li.textContent = `${name} (داخل الاستراحة منذ الساعة: ${enterTime})`;
-            activeList.appendChild(li);
+        // الطريقة الحديثة والآمنة لتفادي خطأ blob URI على الهواتف
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "elegance_breaks_report.csv");
+        
+        // إضافة الرابط مؤقتاً لصفحة المستند وتفعيل النقر برمجياً
+        document.body.appendChild(link);
+        link.click();
+        
+        // تنظيف الذاكرة وحذف العنصر بعد إتمام عملية التحميل
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }
+}
+
+// ربط زر التصدير في الواجهة بدالة التصدير تلقائياً عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    const exportBtn = document.querySelector('.btn-success, button:has-text("تصدير"), [onclick*="export"]');
+    // أو إذا كان الزر يحمل معرفاً معيناً مثل id="exportBtn" يمكنك استخدامه مباشرة:
+    // const exportBtn = document.getElementById('exportBtn');
+    
+    if (exportBtn) {
+        exportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            exportToCSV();
         });
     }
-
-    // عرض مجموع ساعات الاستراحة لكل موظف
-    for (let worker in workerTotalMinutes) {
-        const li = document.createElement('li');
-        let hours = (workerTotalMinutes[worker] / 60).toFixed(2);
-        li.textContent = `${worker}: إجمالي ${hours} ساعة (${workerTotalMinutes[worker]} دقيقة)`;
-        hoursList.appendChild(li);
-    }
-}
-
-// تصدير البيانات إلى جدول إكسل (CSV) متوافق تماماً
-function exportToCSV() {
-    const logs = JSON.parse(localStorage.getItem('breakLogs') || '[]');
-    if (logs.length === 0) return alert('لا توجد بيانات للتصدير');
-
-    let csvContent = "\uFEFFاسم العامل,نوع الحركة,التوقيت\n";
-    logs.forEach(log => {
-        csvContent += `"${log.name}","${log.type}","${log.formattedTime}"\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `سجلات_الاستراحات_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
-        }
-    
+});
