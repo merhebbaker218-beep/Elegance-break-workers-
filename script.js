@@ -1,148 +1,142 @@
-// تهيئة البيانات من التخزين المحلي
-let workersList = JSON.parse(localStorage.getItem('elegance_workers')) || [];
-let breaksData = JSON.parse(localStorage.getItem('elegance_breaks')) || [];
-
-// تحديث القائمة المنسدلة للعمال والواجهة عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', () => {
-    updateWorkersDropdown();
-    updateUI();
-
-    // ربط زر التصدير بدالة الـ CSV
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            exportToCSV();
-        });
-    }
+document.addEventListener('DOMContentLoaded', function () {
+    updateWorkerList();
+    updateDisplay();
 });
 
-// إضافة عامل جديد
-function addNewWorker() {
-    const input = document.getElementById('newWorkerInput');
-    const workerName = input.value.trim();
-
-    if (!workerName) {
-        alert("الرجاء إدخال اسم العامل");
-        return;
-    }
-
-    if (workersList.includes(workerName)) {
-        alert("هذا العامل موجود مسبقاً");
-        return;
-    }
-
-    workersList.push(workerName);
-    localStorage.setItem('elegance_workers', JSON.stringify(workersList));
+// إضافة عامل جديد للقائمة
+function addWorker() {
+    const input = document.getElementById('newWorkerName');
+    const newName = input.value.trim();
     
-    input.value = "";
-    updateWorkersDropdown();
-    updateUI();
-    alert("تم إضافة العامل بنجاح");
+    if (!newName) {
+        alert('الرجاء إدخال اسم صحيح!');
+        return;
+    }
+    
+    let workers = JSON.parse(localStorage.getItem('workerList') || '[]');
+    
+    if (!workers.includes(newName)) {
+        workers.push(newName);
+        localStorage.setItem('workerList', JSON.stringify(workers));
+        updateWorkerList();
+        alert('تمت إضافة العامل بنجاح: ' + newName);
+    } else {
+        alert('هذا الاسم موجود مسبقاً في القائمة!');
+    }
+    
+    input.value = '';
 }
 
-// تحديث القائمة المنسدلة (Dropdown)
-function updateWorkersDropdown() {
-    const select = document.getElementById('workerSelect');
-    if (!select) return;
-
-    select.innerHTML = '<option value="" disabled selected>اختر عاملاً...</option>';
-    workersList.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        select.appendChild(option);
+// تحديث القائمة المنسدلة للأسماء
+function updateWorkerList() {
+    const select = document.getElementById('workerName');
+    const workers = JSON.parse(localStorage.getItem('workerList') || '[]');
+    select.innerHTML = '<option value="">اختر عاملاً...</option>';
+    workers.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
     });
 }
 
-// تسجيل الدخول أو الخروج للاستراحة
-function registerAction(actionType) {
-    const select = document.getElementById('workerSelect');
-    const workerName = select.value;
-
+// تسجيل وقت الدخول أو الخروج
+function saveTime(type) {
+    const workerName = document.getElementById('workerName').value;
     if (!workerName) {
-        alert("الرجاء اختيار عامل من القائمة");
+        alert('يرجى اختيار اسم العامل!');
         return;
     }
 
     const now = new Date();
-    const timeString = now.toLocaleTimeString();
-    const dateString = now.toLocaleDateString();
-
-    const record = {
+    const entry = {
         name: workerName,
-        type: actionType,
-        time: timeString,
-        date: dateString,
-        timestamp: now.getTime() // إضافة وقت رقمي لحساب الساعات والترتيب لاحقاً
+        type: type,
+        timestamp: now.getTime(),
+        formattedTime: now.toLocaleString('ar-EG')
     };
 
-    breaksData.push(record);
-    localStorage.setItem('elegance_breaks', JSON.stringify(breaksData));
-    updateUI();
-    
-    alert(`تم تسجيل ${actionType} للعامل: ${workerName}`);
+    let logs = JSON.parse(localStorage.getItem('breakLogs') || '[]');
+    logs.unshift(entry);
+    localStorage.setItem('breakLogs', JSON.stringify(logs));
+    updateDisplay();
 }
 
-// تحديث الواجهة وعرض العمال المتواجدين حالياً في الاستراحة
-function updateUI() {
+// تحديث الواجهة وحساب الحالات وساعات الاستراحة
+function updateDisplay() {
+    const list = document.getElementById('logList');
     const activeList = document.getElementById('activeWorkersList');
-    if (!activeList) return;
+    const hoursList = document.getElementById('totalHoursList');
+    
+    if (!list) return;
+    
+    list.innerHTML = '';
+    activeList.innerHTML = '';
+    hoursList.innerHTML = '';
 
-    if (breaksData.length === 0) {
-        activeList.innerHTML = '<li>لا يوجد عمال داخل الاستراحة حالياً</li>';
-        return;
-    }
-
-    // خريطة لتخزين أحدث حالة لكل عامل
-    const workerLastAction = {};
-    breaksData.forEach(item => {
-        workerLastAction[item.name] = item;
-    });
-
-    // تصفية العمال الذين أحدث حركة لهم هي "دخول الاستراحة"
-    const activeWorkers = Object.values(workerLastAction).filter(item => item.type === 'دخول الاستراحة');
-
-    if (activeWorkers.length === 0) {
-        activeList.innerHTML = '<li>لا يوجد عمال داخل الاستراحة حالياً</li>';
-        return;
-    }
-
-    activeList.innerHTML = "";
-    activeWorkers.forEach(item => {
+    const logs = JSON.parse(localStorage.getItem('breakLogs') || '[]');
+    
+    // عرض السجلات الأخيرة
+    logs.forEach(log => {
         const li = document.createElement('li');
-        li.textContent = `${item.name} (دخل في الساعة: ${item.time})`;
-        activeList.appendChild(li);
+        li.textContent = log.name + " - " + log.type + ": " + log.formattedTime;
+        list.appendChild(li);
     });
+
+    // تتبع من هو داخل الاستراحة حالياً وحساب مجموع الساعات
+    let workerStatus = {};
+    let workerTotalMinutes = {};
+
+    // قراءة السجلات تصاعدياً للحساب الصحيح
+    const sortedLogs = [...logs].reverse();
+    sortedLogs.forEach(log => {
+        if (!workerTotalMinutes[log.name]) workerTotalMinutes[log.name] = 0;
+
+        if (log.type === 'دخول') {
+            workerStatus[log.name] = log.timestamp;
+        } else if (log.type === 'خروج' && workerStatus[log.name]) {
+            let diffMs = log.timestamp - workerStatus[log.name];
+            let diffMins = Math.floor(diffMs / 60000);
+            workerTotalMinutes[log.name] += diffMins;
+            delete workerStatus[log.name];
+        }
+    });
+
+    // عرض العمال المتواجدين حالياً في الاستراحة للـ مدير
+    const currentlyInside = Object.keys(workerStatus);
+    if (currentlyInside.length === 0) {
+        activeList.innerHTML = '<li>لا يوجد أحد داخل الاستراحة حالياً.</li>';
+    } else {
+        currentlyInside.forEach(name => {
+            const li = document.createElement('li');
+            let enterTime = new Date(workerStatus[name]).toLocaleTimeString('ar-EG');
+            li.textContent = `${name} (داخل الاستراحة منذ الساعة: ${enterTime})`;
+            activeList.appendChild(li);
+        });
+    }
+
+    // عرض مجموع ساعات الاستراحة لكل موظف
+    for (let worker in workerTotalMinutes) {
+        const li = document.createElement('li');
+        let hours = (workerTotalMinutes[worker] / 60).toFixed(2);
+        li.textContent = `${worker}: إجمالي ${hours} ساعة (${workerTotalMinutes[worker]} دقيقة)`;
+        hoursList.appendChild(li);
+    }
 }
 
-// دالة التصدير إلى إكسل (CSV) المتوافقة تماماً مع الهواتف
+// تصدير البيانات إلى جدول إكسل (CSV) متوافق تماماً
 function exportToCSV() {
-    if (!breaksData || breaksData.length === 0) {
-        alert("لا توجد بيانات للتصدير حالياً");
-        return;
-    }
+    const logs = JSON.parse(localStorage.getItem('breakLogs') || '[]');
+    if (logs.length === 0) return alert('لا توجد بيانات للتصدير');
 
-    // إضافة ترميز UTF-8 BOM لضمان قراءة اللغة العربية بشكل صحيح في أكسل
-    let csvContent = "\uFEFF"; 
-    csvContent += "اسم العامل,نوع العملية,الوقت,التاريخ\n";
-
-    breaksData.forEach(row => {
-        csvContent += `"${row.name}","${row.type}","${row.time}","${row.date}"\n`;
+    let csvContent = "\uFEFFاسم العامل,نوع الحركة,التوقيت\n";
+    logs.forEach(log => {
+        csvContent += `"${log.name}","${log.type}","${log.formattedTime}"\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "elegance_breaks_report.csv");
-    
-    document.body.appendChild(link);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `سجلات_الاستراحات_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
-    
-    setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }, 100);
 }
