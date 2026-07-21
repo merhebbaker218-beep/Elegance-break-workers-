@@ -1,66 +1,53 @@
-<!DOCTYPE html>
+<!<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elegance Break App</title>
+    <title>سجل الاستراحات - الإدارة</title>
+    <link rel="stylesheet" href="manifest.json">
     <style>
-        body {
-            font-family: Tahoma, Arial, sans-serif;
-            background-color: #f7f8fc;
-            margin: 0;
-            padding: 0;
-            color: #333;
-        }
-        header {
-            background-color: #5865f2;
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        h1 {
-            font-size: 1.4rem;
-            margin: 0;
-            text-align: center;
-            padding: 15px 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 15px;
-        }
-        .card {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-        }
-        .form-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-        select, input {
-            padding: 10px;
-            font-size: 1rem;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            flex: 1;
-            outline: none;
-        }
-        .btn-primary {
-            background-color: #344154;
-            color: white;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .btn-primary:hover {
+        body { font-family: sans-serif; padding: 20px; text-align: center; background-color: #fdfbf7; }
+        button { padding: 12px 25px; font-size: 16px; margin: 8px; border-radius: 8px; cursor: pointer; border: none; background-color: #2c3e50; color: white; }
+        .export-btn { background-color: #4CAF50; }
+        #logArea { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; text-align: right; }
+        .panel { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: right; }
+    </style>
+</head>
+<body>
+
+    <h1>نظام تسجيل الاستراحات</h1>
+
+<div class="panel">
+    <select id="workerName" style="padding: 10px; width: 55%;"></select>
+    <input type="text" id="newWorkerName" placeholder="اسم جديد" style="padding: 10px; width: 25%;">
+    <button onclick="addWorker()">+</button>
+</div>
+
+    <div>
+        <button onclick="saveTime('دخول')">تسجيل دخول الاستراحة</button>
+        <button onclick="saveTime('خروج')">تسجيل خروج الاستراحة</button>
+    </div>
+
+    <!-- لوحة المتابعة الفورية للإدارة (أونلاين) -->
+    <div class="panel">
+        <h3>العمال المتواجدون حالياً في الاستراحة:</h3>
+        <ul id="activeWorkersList"></ul>
+    </div>
+
+    <div class="panel">
+        <h3>إجمالي ساعات الاستراحة اليومية:</h3>
+        <ul id="totalHoursList"></ul>
+    </div>
+
+    <div>
+        <button class="export-btn" onclick="exportToCSV()">تصدير إلى جدول إكسل (CSV)</button>
+    </div>
+
+    <div id="logArea">
+        <h3>السجلات الأخيرة:</h3>
+        <ul id="logList"></ul>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
